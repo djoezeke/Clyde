@@ -1,4 +1,63 @@
+/**
+ * @file clyde.cpp
+ * @brief Clyde Graphics library.
+ * @details All public API, types, macros, and configuration.
+ * @author Sackey Ezekiel  Etrue (djoezeke)
+ * @version 0.1.0
+ * @see https://www.github.com/djoezeke/clyde
+ * @copyright Copyright (c) 202 Sackey Ezekiel Etrue
+ *
+ * Developed by Sackey Ezekiel Etrue and every direct or indirect contributors to the GitHub.
+ * See LICENSE for copyright and licensing details (standard MIT License).
+ *
+ * SECTIONS: Index of this file
+ *
+ *      Details: Details Namespace
+ *
+ *          [SECTION] Details : Encoding
+ *
+ *
+ *          [SECTION] Details : Exceptions
+ *
+ *
+ * CONTRIBUTORS:
+ *
+ * TODO:
+ *
+ * HELP:
+ *    - See links below.
+ *    - Read top of clyde.h for more details and comments.
+ *
+ *  Has only had a few tests run, may have issues.
+ *
+ *  If having issues compiling/linking/running raise an issue (https://github.com/djoezeke/clyde/issues).
+ *  Please post data https://github.com/djoezeke/clyde/discussions if you cannot find a solution data resources above.
+ *
+ * RESOURCES:
+ * - Homepage ................... https://github.com/djoezeke/clyde
+ * - Releases & changelog ....... https://github.com/djoezeke/clyde/releases
+ * - Issues & support ........... https://github.com/djoezeke/clyde/issues
+ *
+ */
+
 #include "clyde/clyde.h"
+
+#if !defined(CLYDE_OPENGL_11) && \
+    !defined(CLYDE_OPENGL_21) && \
+    !defined(CLYDE_OPENGL_33) && \
+    !defined(CLYDE_OPENGL_43)
+
+// OpenGL Version 3.3
+#define CLYDE_OPENGL_33
+
+#endif // CLYDE_OPENGL_*
+
+#if defined(CLYDE_OPENGL_43)
+// OpenGL Version 3.3
+#define CLYDE_OPENGL_33
+#endif
+
+#pragma region stb_image
 
 // Provide stb_image implementation here
 #define STB_IMAGE_IMPLEMENTATION
@@ -14,32 +73,118 @@
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
 #include "stb_image_resize2.h"
 
+#pragma endregion stb_image
+
+#pragma region stb_truetype
+
 // Provide stb_truetype implementation here
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
 
+#pragma endregion stb_truetype
+
+#pragma region glad
+
 #include <GLAD/glad.h>
+
+#pragma endregion glad
+
 #include <GLFW/glfw3.h>
 #include <fstream>
 #include <iostream>
 #include <vector>
 
+#pragma region clyde
+
 namespace clyde
 {
 
-    // ---- PIMPL Decls for unique_ptr ----
+#pragma region System
+
+    //-----------------------------------------------------------------------------
+    // [Class] Time
+    //-----------------------------------------------------------------------------
+
+    // Time::asSeconds() moved to inline in clyde.h
+    constexpr int32_t clyde::Time::asMilliseconds() const { return static_cast<int32_t>(m_microseconds.count() / 1000); };
+    constexpr int64_t clyde::Time::asMicroseconds() const { return static_cast<int64_t>(m_microseconds.count()); };
+
+    //-----------------------------------------------------------------------------
+    // [Class] Clock
+    //-----------------------------------------------------------------------------
+
+    clyde::Time clyde::Clock::getElapsedTime() const {};
+    bool clyde::Clock::isRunning() const {};
+    void clyde::Clock::start() {};
+    void clyde::Clock::stop() {};
+    clyde::Time clyde::Clock::restart() {};
+    clyde::Time clyde::Clock::reset() {};
+
+#pragma endregion System
+
+#pragma region Geometry
+
+    //-----------------------------------------------------------------------------
+    // [Class] Angle
+    //-----------------------------------------------------------------------------
+
+    constexpr float clyde::Angle::asDegrees() const { return radians * 180.0f / 3.14159265359f; };
+    constexpr float clyde::Angle::asRadians() const { return radians; };
+
+    constexpr Angle degrees(float angle)
+    {
+        Angle a;
+        a.radians = angle * 3.14159265359f / 180.0f;
+        return a;
+    };
+    constexpr Angle radians(float angle)
+    {
+        Angle a;
+        a.radians = angle;
+        return a;
+    };
+
+    //-----------------------------------------------------------------------------
+    // [SECTION] Geometry : Vectors
+    //-----------------------------------------------------------------------------
+
+    //-----------------------------------------------------------------------------
+    // [Class] Vec2
+    //-----------------------------------------------------------------------------
+
+    //-----------------------------------------------------------------------------
+    // [Class] Vec3
+    //-----------------------------------------------------------------------------
+
+    //-----------------------------------------------------------------------------
+    // [Class] Vec3
+    //-----------------------------------------------------------------------------
+
+    //-----------------------------------------------------------------------------
+    // [SECTION] Geometry : Matrices
+    //-----------------------------------------------------------------------------
+
+    //-----------------------------------------------------------------------------
+    // [Class] Mat
+    //-----------------------------------------------------------------------------
+
+#pragma endregion Geometry
+
+#pragma region Graphics
+
+    //-----------------------------------------------------------------------------
+    // [Class] Texture
+    //-----------------------------------------------------------------------------
+
     struct Texture::Impl
     {
         unsigned int id{0};
         int width{0}, height{0};
     };
 
-    struct Image::Impl
-    {
-        Impl(const std::string &path) : texture(path) {}
-        Impl(Texture &&tex) : texture(std::move(tex)) {}
-        Texture texture;
-    };
+    //-----------------------------------------------------------------------------
+    // [Class] Font
+    //-----------------------------------------------------------------------------
 
     struct Font::Impl
     {
@@ -47,117 +192,6 @@ namespace clyde
         stbtt_packedchar chardata[96];
     };
 
-    struct Window::Impl
-    {
-        GLFWwindow *window{nullptr};
-        int width{0}, height{0};
-    };
-
-    // ---- Keyboard ----
-
-    bool Keyboard::isKeyPressed(Keyboard::Key key)
-    {
-        GLFWwindow *w = glfwGetCurrentContext();
-        if (!w)
-            return false;
-        return glfwGetKey(w, static_cast<int>(key)) == GLFW_PRESS;
-    }
-
-    // ---- Mouse ----
-    bool Mouse::isButtonPressed(Button button)
-    {
-        GLFWwindow *w = glfwGetCurrentContext();
-        if (!w)
-            return false;
-        return glfwGetMouseButton(w, static_cast<int>(button)) == GLFW_PRESS;
-    }
-
-    Vec2i Mouse::getPosition()
-    {
-        GLFWwindow *w = glfwGetCurrentContext();
-        if (!w)
-            return {0, 0};
-        double x, y;
-        glfwGetCursorPos(w, &x, &y);
-        return {(int)x, (int)y};
-    }
-
-    void Mouse::setPosition(Vec2i position)
-    {
-        GLFWwindow *w = glfwGetCurrentContext();
-        if (!w)
-            return;
-        glfwSetCursorPos(w, position.x, position.y);
-    }
-
-    // ---- Text ----
-    Text::Text(const std::string &str, const Font &font, int size)
-        : m_text(str), m_font(&font), m_size(size)
-    {
-    }
-
-    // ---- Texture ----
-    static void checkGlError(const char *where)
-    {
-#ifndef NDEBUG
-        GLenum err;
-        while ((err = glGetError()) != GL_NO_ERROR)
-        {
-            std::cerr << "GL error at " << where << ": " << std::hex << err << std::dec << "\n";
-        }
-#endif
-    }
-
-    Texture::Texture(const std::string &path) : m_impl(std::make_unique<Impl>())
-    {
-        int channels;
-        stbi_set_flip_vertically_on_load(1);
-        unsigned char *data = stbi_load(path.c_str(), &m_impl->width, &m_impl->height, &channels, 4);
-        if (!data)
-        {
-            std::cerr << "Failed to load image: " << path << "\n";
-            return;
-        }
-
-        glGenTextures(1, &m_impl->id);
-        glBindTexture(GL_TEXTURE_2D, m_impl->id);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_impl->width, m_impl->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glBindTexture(GL_TEXTURE_2D, 0);
-        stbi_image_free(data);
-    }
-
-    Texture::~Texture()
-    {
-        if (m_impl && m_impl->id)
-            glDeleteTextures(1, &m_impl->id);
-    }
-
-    unsigned int Texture::getId() const { return m_impl ? m_impl->id : 0; }
-    int Texture::getWidth() const { return m_impl ? m_impl->width : 0; }
-    int Texture::getHeight() const { return m_impl ? m_impl->height : 0; }
-
-    Texture::Texture(Texture &&other) noexcept = default;
-    Texture &Texture::operator=(Texture &&other) noexcept = default;
-
-    // ---- Image ----
-    Image::Image(const std::string &path) : m_impl(std::make_unique<Impl>(path))
-    {
-    }
-
-    Image::Image(Texture &&texture) : m_impl(std::make_unique<Impl>(std::move(texture)))
-    {
-    }
-
-    Image::~Image() = default;
-
-    const Texture &Image::toTexture() const
-    {
-        return m_impl->texture;
-    }
-
-    // ---- Font ----
     Font::Font(const char *path) : m_impl(std::make_unique<Impl>())
     {
         std::ifstream file(path, std::ios::binary | std::ios::ate);
@@ -217,6 +251,128 @@ namespace clyde
     unsigned int Font::getTextureId() const { return m_impl ? m_impl->texture.getId() : 0; }
     const void *Font::getCharData() const { return m_impl ? m_impl->chardata : nullptr; }
 
+    //-----------------------------------------------------------------------------
+    // [Class] Texture
+    //-----------------------------------------------------------------------------
+
+    Texture::Texture(const std::string &path) : m_impl(std::make_unique<Impl>())
+    {
+        int channels;
+        stbi_set_flip_vertically_on_load(1);
+        unsigned char *data = stbi_load(path.c_str(), &m_impl->width, &m_impl->height, &channels, 4);
+        if (!data)
+        {
+            std::cerr << "Failed to load image: " << path << "\n";
+            return;
+        }
+
+        glGenTextures(1, &m_impl->id);
+        glBindTexture(GL_TEXTURE_2D, m_impl->id);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_impl->width, m_impl->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        stbi_image_free(data);
+    }
+
+    Texture::~Texture()
+    {
+        if (m_impl && m_impl->id)
+            glDeleteTextures(1, &m_impl->id);
+    }
+
+    unsigned int Texture::getId() const { return m_impl ? m_impl->id : 0; }
+    int Texture::getWidth() const { return m_impl ? m_impl->width : 0; }
+    int Texture::getHeight() const { return m_impl ? m_impl->height : 0; }
+
+    Texture::Texture(Texture &&other) noexcept = default;
+    Texture &Texture::operator=(Texture &&other) noexcept = default;
+
+    //-----------------------------------------------------------------------------
+    // [Class] Image
+    //-----------------------------------------------------------------------------
+
+    struct Image::Impl
+    {
+        void *data;
+        int width;
+        int height;
+        int format;
+        int mipmaps;
+    };
+
+    Image::Image(Texture texture)
+        : m_impl(std::make_unique<Impl>())
+    {
+    }
+
+    Image::Image(const char *file)
+        : m_impl(std::make_unique<Impl>())
+    {
+        // Loading file to memory
+        // Loading image from memory
+    }
+
+    Image::Image(const std::string &path)
+        : m_impl(std::make_unique<Impl>())
+    {
+    }
+
+    Image::Image(Format format, const unsigned char *data, int size)
+        : m_impl(std::make_unique<Impl>())
+    {
+        m_impl->data = nullptr;
+        m_impl->width = 0;
+        m_impl->height = 0;
+        m_impl->format = format;
+        m_impl->mipmaps = 0;
+
+        switch (format)
+        {
+        case Format::PNG:
+        case Format::BMP:
+        case Format::JPG:
+        case Format::TGA:
+        case Format::JPEG:
+            if (data != NULL)
+            {
+                int comp = 0;
+                m_impl->data = stbi_load_from_memory(data, size, &m_impl->width, &m_impl->height, &comp, 0);
+
+                if (m_impl->data != NULL)
+                {
+                    m_impl->mipmaps = 1;
+                }
+            }
+            break;
+        default:
+            break;
+        }
+    }
+
+    Image::~Image() = default;
+
+    const Texture &Image::toTexture() const
+    {
+        // Return a default texture - in a real implementation,
+        // this would create or cache a texture from the image data
+        static Texture defaultTexture;
+        return defaultTexture;
+    }
+
+    //-----------------------------------------------------------------------------
+    // [Class] Text
+    //-----------------------------------------------------------------------------
+
+    Text::Text(const std::string &str, const Font &font, int size)
+        : m_text(str), m_font(&font), m_size(size)
+    {
+    }
+
+#pragma endregion Graphics
+
+#pragma region Windows
+
     // ---- Window / Renderer ----
     namespace
     {
@@ -266,13 +422,13 @@ namespace clyde
             if (!renderer.initialized)
             {
                 const char *vs = R"GLSL(
-			#version 330 core
-			layout(location = 0) in vec2 aPos;
-			layout(location = 1) in vec2 aUV;
-			uniform vec2 uPosition;
-			uniform vec2 uSize;
-			uniform mat4 uProj;
-			out vec2 vUV;
+                #version 120
+                attribute vec2 aPos;
+                attribute vec2 aUV;
+                uniform mat4 uProj;
+                uniform vec2 uPosition;
+                uniform vec2 uSize;
+                varying vec2 vUV;
 			void main() {
 				vec2 pos = aPos * uSize + uPosition;
 				gl_Position = uProj * vec4(pos, 0.0, 1.0);
@@ -281,12 +437,11 @@ namespace clyde
 		)GLSL";
 
                 const char *fs = R"GLSL(
-			#version 330 core
-			in vec2 vUV;
-			out vec4 FragColor;
+                #version 120
+                varying vec2 vUV;
 			uniform sampler2D uTexture;
 			void main() {
-				FragColor = texture(uTexture, vUV);
+                    gl_FragColor = texture2D(uTexture, vUV);
 			}
 		)GLSL";
 
@@ -452,37 +607,65 @@ namespace clyde
 
     } // anonymous namespace
 
-    // Static GLFW initialization guard
-    namespace
+    //-----------------------------------------------------------------------------
+    // [SECTION] Windows : Input
+    //-----------------------------------------------------------------------------
+
+    //-----------------------------------------------------------------------------
+    // [Class] Mouse
+    //-----------------------------------------------------------------------------
+
+    bool Mouse::isButtonPressed(Button button)
     {
-        static int glfwInitCount = 0;
-
-        static bool ensureGlfwInit()
-        {
-            if (glfwInitCount == 0)
-            {
-                if (!glfwInit())
-                {
-                    std::cerr << "Failed to initialize GLFW\n";
-                    return false;
-                }
-            }
-            ++glfwInitCount;
-            return true;
-        }
-
-        static void releaseGlfwInit()
-        {
-            if (glfwInitCount > 0)
-            {
-                --glfwInitCount;
-                if (glfwInitCount == 0)
-                {
-                    glfwTerminate();
-                }
-            }
-        }
+        GLFWwindow *w = glfwGetCurrentContext();
+        if (!w)
+            return false;
+        return glfwGetMouseButton(w, static_cast<int>(button)) == GLFW_PRESS;
     }
+
+    Vec2i Mouse::getPosition()
+    {
+        GLFWwindow *w = glfwGetCurrentContext();
+        if (!w)
+            return {0, 0};
+        double x, y;
+        glfwGetCursorPos(w, &x, &y);
+        return {(int)x, (int)y};
+    }
+
+    void Mouse::setPosition(Vec2i position)
+    {
+        GLFWwindow *w = glfwGetCurrentContext();
+        if (!w)
+            return;
+        glfwSetCursorPos(w, position.x, position.y);
+    }
+
+    //-----------------------------------------------------------------------------
+    // [Class] Keyboard
+    //-----------------------------------------------------------------------------
+
+    bool Keyboard::isKeyPressed(Keyboard::Key key)
+    {
+        GLFWwindow *w = glfwGetCurrentContext();
+        if (!w)
+            return false;
+        return glfwGetKey(w, static_cast<int>(key)) == GLFW_PRESS;
+    }
+
+    //-----------------------------------------------------------------------------
+    // [SECTION] Windows : Window
+    //-----------------------------------------------------------------------------
+
+    //-----------------------------------------------------------------------------
+    // [Class] Window
+    //-----------------------------------------------------------------------------
+
+    struct Window::Impl
+    {
+        GLFWwindow *window{nullptr};
+        int width{0}, height{0};
+    };
 
     Window::Window(int width, int height, const char *title)
         : m_impl(std::make_unique<Impl>())
@@ -490,33 +673,41 @@ namespace clyde
         m_impl->width = width;
         m_impl->height = height;
 
-        if (!ensureGlfwInit())
+        if (!glfwInit())
         {
             return;
         }
 
         // Set window hints for OpenGL context
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
-        glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
-        glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
+        // glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        // glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+        // glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+        // glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
+        // glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
+        // glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
 
         m_impl->window = glfwCreateWindow(m_impl->width, m_impl->height, title, nullptr, nullptr);
         if (!m_impl->window)
         {
-            std::cerr << "Failed to create GLFW window with OpenGL 3.3 Core\n";
             std::cerr << "GLFW Error: ";
             const char *error;
             int code = glfwGetError(&error);
             if (error)
                 std::cerr << error << "\n";
-            releaseGlfwInit();
-            return;
         }
 
         glfwMakeContextCurrent(m_impl->window);
+        glfwSwapInterval(1); // Enable vsync
+
+        // Check if we have an OpenGL context
+        const char *renderAPI = (const char *)glGetString(GL_VENDOR);
+        bool hasOpenGL = (renderAPI != nullptr);
+
+        if (!hasOpenGL)
+        {
+            std::cerr << "Warning: OpenGL context not available, rendering will be limited\n";
+        }
+
         glfwSwapInterval(1); // Enable vsync
 
         glfwSetWindowUserPointer(m_impl->window, this);
@@ -525,10 +716,10 @@ namespace clyde
         glfwSetCursorPosCallback(m_impl->window, cursor_position_callback);
         glfwSetScrollCallback(m_impl->window, scroll_callback);
 
-        if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+        if (hasOpenGL && !gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
         {
             std::cerr << "Failed to initialize GLAD\n";
-            releaseGlfwInit();
+            glfwTerminate();
             return;
         }
 
@@ -545,7 +736,7 @@ namespace clyde
             glfwDestroyWindow(m_impl->window);
         }
         cleanupRenderer();
-        releaseGlfwInit();
+        glfwTerminate();
     }
 
     void Window::Open()
@@ -687,4 +878,8 @@ namespace clyde
         m_events.push(event);
     }
 
+#pragma endregion Windows
+
 } // namespace clyde
+
+#pragma endregion clyde

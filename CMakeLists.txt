@@ -117,6 +117,9 @@ endif()
 
 include_directories("." "./include" "vendor/glfw/include" "vendor/glad/include")
 
-add_library(clyde STATIC src/clyde/clyde.cpp)
+add_library(clyde STATIC 
+    src/clyde/clyde.cpp
+    src/clyde/sound.cpp
+)
 # add_library(cylde "src/cylde/cylde.cpp")
 target_link_libraries(clyde glfw glad)

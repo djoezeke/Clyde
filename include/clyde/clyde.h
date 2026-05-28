@@ -1,12 +1,31 @@
 /**
  * @file clyde.h
- * @brief Main header for the Clyde graphics library.
+ * @brief Clyde Graphics library.
+ * @author Sackey Ezekiel Etrue (djoezeke)
+ * @version 0.1.0
+ * @copyright Copyright (c) 202 Sackey Ezekiel Etrue
  *
  * This file contains the main declarations for the Clyde library,
  * including classes for windows, events, graphics primitives, and more.
  */
 
 #ifndef CLYDE_CLYDE_H
+
+/**
+ * SECTIONS: Index of this file
+ *
+ *  [SECTION] Include Mess
+ *  [SECTION] Configurations
+ *  [SECTION] Compiler & Platform
+ *  [SECTION] API Imports/Exports
+ *
+ *  Forward: Forward Declarations
+ *
+ *      [SECTION] Details Forward
+ *      [SECTION] Literals Forward
+ *
+ */
+
 #define CLYDE_CLYDE_H
 
 #include <cstdint>
@@ -23,6 +42,44 @@ struct GLFWwindow;
 
 namespace clyde
 {
+
+#pragma region System
+
+    //-----------------------------------------------------------------------------
+    // [SECTION] System : Time
+    //-----------------------------------------------------------------------------
+
+    class Time
+    {
+    public:
+        constexpr Time() = default;
+
+        [[nodiscard]] constexpr float asSeconds() const { return static_cast<float>(m_microseconds.count()) / 1e6f; }
+        [[nodiscard]] constexpr std::int32_t asMilliseconds() const;
+        [[nodiscard]] constexpr std::int64_t asMicroseconds() const;
+
+    public:
+        std::chrono::microseconds m_microseconds{};
+    };
+
+    class Clock
+    {
+    public:
+        [[nodiscard]] Time getElapsedTime() const;
+        [[nodiscard]] bool isRunning() const;
+        void start();
+        void stop();
+        Time restart();
+        Time reset();
+
+    private:
+        struct Impl;
+        std::unique_ptr<Impl> impl;
+    };
+
+#pragma endregion System
+
+#pragma region Geometry
 
     /**
      * @class Angle
@@ -66,6 +123,16 @@ namespace clyde
      */
     [[nodiscard]] constexpr Angle radians(float angle);
 
+    //-----------------------------------------------------------------------------
+    // [SECTION] Geometry : Vectors
+    //-----------------------------------------------------------------------------
+
+    /**
+     * @defgroup vector Vector Structures
+     * @brief A collection of Geometric Vector structures.
+     * @{
+     */
+
     /**
      * @class Vec2
      * @brief A 2D vector.
@@ -79,12 +146,14 @@ namespace clyde
          * @brief Default constructor. Initializes vector to (0, 0).
          */
         constexpr Vec2() = default;
+
         /**
          * @brief Constructor with x and y components.
          * @param x The x-component.
          * @param y The y-component.
          */
         constexpr Vec2(T x, T y) : x(x), y(y) {}
+
         /**
          * @brief Constructor with radius and angle.
          * @param r The radius.
@@ -97,59 +166,70 @@ namespace clyde
          * @return The area.
          */
         inline constexpr auto area() const;
+
         /**
          * @brief Get the magnitude of the vector.
          * @return The magnitude.
          */
         inline constexpr auto mag() const;
+
         /**
          * @brief Get the normalized vector.
          * @return The normalized vector.
          */
+
         inline constexpr Vec2 norm() const;
         /**
          * @brief Get the perpendicular vector.
          * @return The perpendicular vector.
          */
+
         inline constexpr Vec2 perp() const;
         /**
          * @brief Get the ceiling vector.
          * @return The ceiling vector.
          */
+
         inline constexpr Vec2 ceil() const;
         /**
          * @brief Get the maximum vector.
          * @param v The vector to compare.
          * @return The maximum vector.
          */
+
         inline constexpr Vec2 max(const Vec2 &v) const;
         /**
          * @brief Get the minimum vector.
          * @param v The vector to compare.
          * @return The minimum vector.
          */
+
         inline constexpr Vec2 min(const Vec2 &v) const;
         /**
          * @brief Get the dot product.
          * @param v The vector to dot.
          * @return The dot product.
          */
+
         inline constexpr Vec2 dot(const Vec2 &v) const;
         /**
          * @brief Get the cross product.
          * @param v The vector to cross.
          * @return The cross product.
          */
+
         inline constexpr Vec2 cross(const Vec2 &v) const;
         /**
          * @brief Get the Cartesian coordinates.
          * @return The Cartesian coordinates.
          */
+
         inline constexpr Vec2 cart() const;
         /**
          * @brief Get the polar coordinates.
          * @return The polar coordinates.
          */
+
         inline constexpr Vec2 polar() const;
         /**
          * @brief Get the clamped vector.
@@ -157,6 +237,7 @@ namespace clyde
          * @param v2 The upper bound.
          * @return The clamped vector.
          */
+
         inline constexpr Vec2 clamp(const Vec2 &v1, const Vec2 &v2) const;
         /**
          * @brief Get the linear interpolation.
@@ -164,7 +245,9 @@ namespace clyde
          * @param t The interpolation factor.
          * @return The interpolated vector.
          */
+
         inline constexpr Vec2 lerp(const Vec2 &v1, const double t) const;
+
         /**
          * @brief Get the reflection.
          * @return The reflection.
@@ -176,28 +259,33 @@ namespace clyde
          * @return The length.
          */
         [[nodiscard]] T length() const;
+
         /**
          * @brief Get the length squared.
          * @return The length squared.
          */
         [[nodiscard]] constexpr T lengthSquared() const;
+
         /**
          * @brief Get the angle to another vector.
          * @param rhs The other vector.
          * @return The angle.
          */
         [[nodiscard]] Angle angleTo(Vec2 rhs) const;
+
         /**
          * @brief Get the angle.
          * @return The angle.
          */
         [[nodiscard]] Angle angle() const;
+
         /**
          * @brief Get the vector rotated by an angle.
          * @param phi The angle to rotate.
          * @return The rotated vector.
          */
         [[nodiscard]] Vec2 rotatedBy(Angle phi) const;
+
         /**
          * @brief Get the vector projected onto an axis.
          * @param axis The axis.
@@ -232,6 +320,107 @@ namespace clyde
     using Vec2f = Vec2<float>;
     using Vec2i = Vec2<int>;
 
+    template <typename T>
+    class Vec3
+    {
+    public:
+        constexpr Vec3() = default;
+        constexpr Vec3(T x, T y, T z);
+
+        inline constexpr Vec3 norm() const;
+        inline constexpr Vec3 dot(const Vec3 &v) const;
+        inline constexpr Vec3 cross(const Vec3 &v) const;
+
+        [[nodiscard]] T length() const;
+        [[nodiscard]] constexpr T lengthSquared() const;
+
+    public:
+        T x{}; // x-axis component
+        T y{}; // y-axis component
+        T z{}; // z-axis component
+    };
+
+    template <typename T>
+    constexpr Vec3<T> &operator==(Vec3<T> &left, Vec3<T> right);
+
+    template <typename T>
+    constexpr Vec3<T> &operator!=(Vec3<T> &left, Vec3<T> right);
+
+    template <typename T>
+    constexpr Vec3<T> &operator+=(Vec3<T> &left, Vec3<T> right);
+
+    template <typename T>
+    constexpr Vec3<T> &operator-=(Vec3<T> &left, Vec3<T> right);
+
+    template <typename T>
+    constexpr Vec3<T> &operator+(Vec3<T> &left, Vec3<T> right);
+
+    template <typename T>
+    constexpr Vec3<T> &operator-(Vec3<T> &left, Vec3<T> right);
+
+    using Vec3d = Vec3<double>;
+    using Vec3f = Vec3<float>;
+    using Vec3i = Vec3<int>;
+
+    // using Point = Vec2<int>;
+
+    template <typename T>
+    class Vec4
+    {
+    public:
+        constexpr Vec4() = default;
+        constexpr Vec4(T x, T y, T z, T w);
+
+        inline constexpr Vec4 norm() const;
+        inline constexpr Vec4 dot(const Vec4 &v) const;
+        inline constexpr Vec4 cross(const Vec4 &v) const;
+
+        [[nodiscard]] T length() const;
+        [[nodiscard]] constexpr T lengthSquared() const;
+
+    public:
+        T x{}; // x-axis component
+        T y{}; // y-axis component
+        T z{}; // z-axis component
+        T w{}; // z-axis component
+    };
+
+    /** @} group vector */
+
+    //-----------------------------------------------------------------------------
+    // [SECTION] Geometry : Matrices
+    //-----------------------------------------------------------------------------
+
+    /**
+     * @defgroup matrix Matrix Structures
+     * @brief A collection of Geometric Matrix structures.
+     * @{
+     */
+
+    template <std::size_t Columns, std::size_t Rows>
+    struct Mat
+    {
+        float mat[Columns][Rows];
+    };
+
+    using Mat2x2 = Mat<2, 2>;
+    using Mat3x3 = Mat<3, 3>;
+    using Mat4x4 = Mat<4, 4>;
+
+    using Mat2 = Mat2x2;
+    using Mat3 = Mat3x3;
+    using Mat4 = Mat4x4;
+
+    /** @} group matrix */
+
+#pragma endregion Geometry
+
+#pragma region Graphics
+
+    //-----------------------------------------------------------------------------
+    // [SECTION] Graphics :
+    //-----------------------------------------------------------------------------
+
     // Simple color
     class Color
     {
@@ -240,6 +429,178 @@ namespace clyde
         constexpr Color() = default;
         constexpr Color(std::uint8_t _r, std::uint8_t _g, std::uint8_t _b, std::uint8_t _a = 255)
             : r(_r), g(_g), b(_b), a(_a) {}
+    };
+
+    class Pixel
+    {
+        enum Format
+        {
+            R8G8B8,
+        };
+        enum Mode
+        {
+            NORMAL,
+            MASK,
+            ALPHA,
+            CUSTOM,
+        };
+    };
+
+    class Font
+    {
+    public:
+        enum Format
+        {
+            ttf,
+        };
+
+    public:
+        Font() = default;
+        Font(const char *path);
+        Font(const std::string &path);
+        Font(Format format, const unsigned char *data, int size);
+
+        ~Font();
+
+        unsigned int getTextureId() const;
+        const void *getCharData() const;
+
+    private:
+        struct Impl;
+        std::unique_ptr<Impl> m_impl;
+    };
+
+    class Texture
+    {
+    public:
+        enum Format
+        {
+            png,
+        };
+
+    public:
+        Texture() = default;
+        Texture(const char *path);
+        Texture(const std::string &path);
+        Texture(Format format, const unsigned char *data, int size);
+        ~Texture();
+
+        Texture(const Texture &) = delete;
+        Texture &operator=(const Texture &) = delete;
+
+        Texture(Texture &&) noexcept;
+        Texture &operator=(Texture &&) noexcept;
+
+        unsigned int getId() const;
+        int getWidth() const;
+        int getHeight() const;
+
+    private:
+        struct Impl;
+        std::unique_ptr<Impl> m_impl;
+
+        friend class Font;
+    };
+
+    class Image
+    {
+    public:
+        enum Format
+        {
+            PNG,
+            BMP,
+            TGA,
+            JPG,
+            JPEG,
+        };
+
+    public:
+        Image() = default;
+        Image(Texture texture);
+        Image(const char *file);
+        Image(const std::string &path);
+        Image(Format format, const unsigned char *data, int size);
+
+        Image(Texture &&texture);
+        ~Image();
+
+        const Texture &toTexture() const;
+
+    private:
+        struct Impl;
+        std::unique_ptr<Impl> m_impl;
+    };
+
+    class Text
+    {
+    public:
+        Text(const std::string &str, const Font &font, int size = 30);
+
+        const std::string &getString() const { return m_text; }
+        const Font *getFont() const { return m_font; }
+        int getSize() const { return m_size; }
+
+    private:
+        std::string m_text;
+        const Font *m_font;
+        int m_size;
+    };
+
+    class Shape
+    {
+    public:
+        Shape() = default;
+        virtual ~Shape() = default;
+    };
+
+#pragma endregion Graphics
+
+#pragma region Renderer
+
+    class Renderer
+    {
+    };
+
+    class Shader
+    {
+    };
+
+#pragma endregion Renderer
+
+#pragma region Windows
+
+    //-----------------------------------------------------------------------------
+    // [SECTION] Windows : Input
+    //-----------------------------------------------------------------------------
+
+    /**
+     * @defgroup input Window Inputs.
+     * @brief Window Input Classes.
+     * @{
+     */
+
+    class Mouse
+    {
+    public:
+        enum class Button
+        {
+            Left,   // left mouse button
+            Right,  // right mouse button
+            Middle, // middle (wheel) mouse button
+        };
+
+        enum class Wheel
+        {
+            Vertical,  // Vertical mouse wheel
+            Horizontal // horizontal mouse wheel
+        };
+
+    public:
+        [[nodiscard]] bool isButtonPressed(Button button);
+
+        [[nodiscard]] Vec2i getPosition();
+
+        void setPosition(Vec2i position);
     };
 
     // Keyboard helper
@@ -375,29 +736,11 @@ namespace clyde
         static bool isKeyPressed(Key key);
     };
 
-    class Mouse
-    {
-    public:
-        enum class Button
-        {
-            Left,   // left mouse button
-            Right,  // right mouse button
-            Middle, // middle (wheel) mouse button
-        };
+    /** @} group input */
 
-        enum class Wheel
-        {
-            Vertical,  // Vertical mouse wheel
-            Horizontal // horizontal mouse wheel
-        };
-
-    public:
-        [[nodiscard]] bool isButtonPressed(Button button);
-
-        [[nodiscard]] Vec2i getPosition();
-
-        void setPosition(Vec2i position);
-    };
+    //-----------------------------------------------------------------------------
+    // [SECTION] Windows : Event
+    //-----------------------------------------------------------------------------
 
     class Event
     {
@@ -471,119 +814,9 @@ namespace clyde
             m_data;
     };
 
-    class Time
-    {
-    public:
-        constexpr Time() = default;
-
-        [[nodiscard]] constexpr float asSeconds() const;
-        [[nodiscard]] constexpr std::int32_t asMilliseconds() const;
-        [[nodiscard]] constexpr std::int64_t asMicroseconds() const;
-
-    public:
-        std::chrono::microseconds m_microseconds{};
-    };
-
-    class Clock
-    {
-    public:
-        [[nodiscard]] Time getElapsedTime() const;
-        [[nodiscard]] bool isRunning() const;
-        void start();
-        void stop();
-        Time restart();
-        Time reset();
-
-    private:
-        struct Impl;
-        std::unique_ptr<Impl> impl;
-    };
-
-    class Font
-    {
-    public:
-        enum Format
-        {
-            ttf,
-        };
-
-    public:
-        Font() = default;
-        Font(const char *path);
-        ~Font();
-
-        unsigned int getTextureId() const;
-        const void *getCharData() const;
-
-    private:
-        struct Impl;
-        std::unique_ptr<Impl> m_impl;
-    };
-
-    class Texture
-    {
-    public:
-        Texture() = default;
-        Texture(const std::string &path);
-        ~Texture();
-
-        Texture(const Texture &) = delete;
-        Texture &operator=(const Texture &) = delete;
-
-        Texture(Texture &&) noexcept;
-        Texture &operator=(Texture &&) noexcept;
-
-        unsigned int getId() const;
-        int getWidth() const;
-        int getHeight() const;
-
-    private:
-        struct Impl;
-        std::unique_ptr<Impl> m_impl;
-
-        friend class Font; // Allow Font to access Texture's private members
-    };
-
-    class Image
-    {
-    public:
-        Image() = default;
-        Image(const std::string &path);
-        Image(Texture &&texture);
-        ~Image();
-
-        const Texture &toTexture() const;
-
-    private:
-        struct Impl;
-        std::unique_ptr<Impl> m_impl;
-    };
-
-    class Shader
-    {
-    };
-
-    class Text
-    {
-    public:
-        Text(const std::string &str, const Font &font, int size = 30);
-
-        const std::string &getString() const { return m_text; }
-        const Font *getFont() const { return m_font; }
-        int getSize() const { return m_size; }
-
-    private:
-        std::string m_text;
-        const Font *m_font;
-        int m_size;
-    };
-
-    class Shape
-    {
-    public:
-        Shape() = default;
-        virtual ~Shape() = default;
-    };
+    //-----------------------------------------------------------------------------
+    // [SECTION] Windows : Window
+    //-----------------------------------------------------------------------------
 
     class Window
     {
@@ -614,6 +847,8 @@ namespace clyde
         std::unique_ptr<Impl> m_impl;
         std::queue<Event> m_events;
     };
+
+#pragma endregion Windows
 
 } // namespace clyde
 

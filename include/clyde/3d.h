@@ -6,13 +6,43 @@
 namespace clyde
 {
 
-    class Model
+#pragma region Geometry
+
+    //-----------------------------------------------------------------------------
+    // [SECTION] Geometry : Shape
+    //-----------------------------------------------------------------------------
+
+    /**
+     * @defgroup geometry Geometry 3D
+     * @brief A collection of 3D Geometric primitives.
+     * @{
+     */
+
+    class Cube
     {
     };
 
-    class Mesh
+    class Prism
     {
     };
+
+    class Sphere
+    {
+    };
+
+    class Capsule
+    {
+    };
+
+    class Cylinder
+    {
+    };
+
+    /** @} */
+
+#pragma endregion Geometry
+
+#pragma region Graphics
 
     class Line3D : Shape
     {
@@ -43,6 +73,16 @@ namespace clyde
     };
 
     class Capsule : Shape
+    {
+    };
+
+#pragma endregion Graphics
+
+    class Model
+    {
+    };
+
+    class Mesh
     {
     };
 

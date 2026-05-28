@@ -22,3 +22,6 @@ add_custom_command(TARGET demo POST_BUILD
         "${CMAKE_BINARY_DIR}/tuffy.ttf"
 )
 
+# Add sound example subdirectory
+add_subdirectory(sound)
+
