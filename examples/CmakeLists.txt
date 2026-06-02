@@ -4,6 +4,10 @@ add_executable(demo "demo.cpp")
 target_link_libraries(demo clyde)
 target_include_directories(demo PUBLIC "../include" )
 
+add_executable(demo2 "de.cpp")
+target_link_libraries(demo2 clyde)
+target_include_directories(demo2 PUBLIC "../include" )
+
 # Set working directory for debugging
 set_target_properties(demo PROPERTIES
     VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
@@ -21,7 +25,3 @@ add_custom_command(TARGET demo POST_BUILD
         "${CMAKE_CURRENT_SOURCE_DIR}/tuffy.ttf"
         "${CMAKE_BINARY_DIR}/tuffy.ttf"
 )
-
-# Add sound example subdirectory
-add_subdirectory(sound)
-

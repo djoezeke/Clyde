@@ -28,6 +28,18 @@
 
 #define CLYDE_CLYDE_H
 
+#include <algorithm>
+#include <functional>
+#include <iostream>
+#include <memory>
+#include <utility>
+
+#include <sstream>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
+
 #include <cstdint>
 #include <cstdlib>
 #include <string>
@@ -177,67 +189,66 @@ namespace clyde
          * @brief Get the normalized vector.
          * @return The normalized vector.
          */
-
         inline constexpr Vec2 norm() const;
+
         /**
          * @brief Get the perpendicular vector.
          * @return The perpendicular vector.
          */
-
         inline constexpr Vec2 perp() const;
+
         /**
          * @brief Get the ceiling vector.
          * @return The ceiling vector.
          */
-
         inline constexpr Vec2 ceil() const;
+
         /**
          * @brief Get the maximum vector.
          * @param v The vector to compare.
          * @return The maximum vector.
          */
-
         inline constexpr Vec2 max(const Vec2 &v) const;
+
         /**
          * @brief Get the minimum vector.
          * @param v The vector to compare.
          * @return The minimum vector.
          */
-
         inline constexpr Vec2 min(const Vec2 &v) const;
+
         /**
          * @brief Get the dot product.
          * @param v The vector to dot.
          * @return The dot product.
          */
-
         inline constexpr Vec2 dot(const Vec2 &v) const;
+
         /**
          * @brief Get the cross product.
          * @param v The vector to cross.
          * @return The cross product.
          */
-
         inline constexpr Vec2 cross(const Vec2 &v) const;
+
         /**
          * @brief Get the Cartesian coordinates.
          * @return The Cartesian coordinates.
          */
-
         inline constexpr Vec2 cart() const;
+
         /**
          * @brief Get the polar coordinates.
          * @return The polar coordinates.
          */
-
         inline constexpr Vec2 polar() const;
+
         /**
          * @brief Get the clamped vector.
          * @param v1 The lower bound.
          * @param v2 The upper bound.
          * @return The clamped vector.
          */
-
         inline constexpr Vec2 clamp(const Vec2 &v1, const Vec2 &v2) const;
         /**
          * @brief Get the linear interpolation.
@@ -431,151 +442,37 @@ namespace clyde
             : r(_r), g(_g), b(_b), a(_a) {}
     };
 
-    class Pixel
-    {
-        enum Format
-        {
-            R8G8B8,
-        };
-        enum Mode
-        {
-            NORMAL,
-            MASK,
-            ALPHA,
-            CUSTOM,
-        };
-    };
-
-    class Font
-    {
-    public:
-        enum Format
-        {
-            ttf,
-        };
-
-    public:
-        Font() = default;
-        Font(const char *path);
-        Font(const std::string &path);
-        Font(Format format, const unsigned char *data, int size);
-
-        ~Font();
-
-        unsigned int getTextureId() const;
-        const void *getCharData() const;
-
-    private:
-        struct Impl;
-        std::unique_ptr<Impl> m_impl;
-    };
-
-    class Texture
-    {
-    public:
-        enum Format
-        {
-            png,
-        };
-
-    public:
-        Texture() = default;
-        Texture(const char *path);
-        Texture(const std::string &path);
-        Texture(Format format, const unsigned char *data, int size);
-        ~Texture();
-
-        Texture(const Texture &) = delete;
-        Texture &operator=(const Texture &) = delete;
-
-        Texture(Texture &&) noexcept;
-        Texture &operator=(Texture &&) noexcept;
-
-        unsigned int getId() const;
-        int getWidth() const;
-        int getHeight() const;
-
-    private:
-        struct Impl;
-        std::unique_ptr<Impl> m_impl;
-
-        friend class Font;
-    };
-
-    class Image
-    {
-    public:
-        enum Format
-        {
-            PNG,
-            BMP,
-            TGA,
-            JPG,
-            JPEG,
-        };
-
-    public:
-        Image() = default;
-        Image(Texture texture);
-        Image(const char *file);
-        Image(const std::string &path);
-        Image(Format format, const unsigned char *data, int size);
-
-        Image(Texture &&texture);
-        ~Image();
-
-        const Texture &toTexture() const;
-
-    private:
-        struct Impl;
-        std::unique_ptr<Impl> m_impl;
-    };
-
-    class Text
-    {
-    public:
-        Text(const std::string &str, const Font &font, int size = 30);
-
-        const std::string &getString() const { return m_text; }
-        const Font *getFont() const { return m_font; }
-        int getSize() const { return m_size; }
-
-    private:
-        std::string m_text;
-        const Font *m_font;
-        int m_size;
-    };
-
-    class Shape
-    {
-    public:
-        Shape() = default;
-        virtual ~Shape() = default;
-    };
-
 #pragma endregion Graphics
 
 #pragma region Renderer
 
-    class Renderer
-    {
-    };
+#pragma region OpenGL10
 
-    class Shader
-    {
-    };
+#if defined(CLYDE_RENDERER_OPENGL10)
+
+#endif // CLYDE_RENDERER_OPENGL10
+
+#pragma endregion OpenGL10
+
+#pragma region OpenGL33
+
+#if defined(CLYDE_RENDERER_OPENGL33)
+
+#endif // CLYDE_RENDERER_OPENGL33
+
+#pragma endregion OpenGL33
 
 #pragma endregion Renderer
 
-#pragma region Windows
+#pragma region Platform
 
     //-----------------------------------------------------------------------------
-    // [SECTION] Windows : Input
+    // [SECTION] Platform : Input
     //-----------------------------------------------------------------------------
 
     /**
-     * @defgroup input Window Inputs.
-     * @brief Window Input Classes.
+     * @defgroup input Platform Inputs.
+     * @brief Platform Input Classes.
      * @{
      */
 
@@ -596,11 +493,22 @@ namespace clyde
         };
 
     public:
-        [[nodiscard]] bool isButtonPressed(Button button);
+        [[nodiscard]] bool IsButtonPressed(Button button)
+        {
+            return s_Instance->IsButtonPressedImpl(button);
+        };
 
-        [[nodiscard]] Vec2i getPosition();
+        std::pair<float, float> GetPosition()
+        {
+            return s_Instance->GetPositionImpl();
+        };
 
-        void setPosition(Vec2i position);
+    protected:
+        virtual bool IsButtonPressedImpl(Button button) = 0;
+        virtual std::pair<float, float> GetPositionImpl() = 0;
+
+    private:
+        static Mouse *s_Instance;
     };
 
     // Keyboard helper
@@ -733,122 +641,436 @@ namespace clyde
             Count
         };
 
-        static bool isKeyPressed(Key key);
+        static bool IsKeyPressed(Key key)
+        {
+            return s_Instance->IsKeyPressedImpl(key);
+        };
+
+    protected:
+        virtual bool IsKeyPressedImpl(Key key) = 0;
+
+    private:
+        static Keyboard *s_Instance;
     };
 
     /** @} group input */
 
+#pragma region Event
+
+#define EVENT(type)                                                    \
+    static Type GetStaticType() { return Type::type; };                \
+    virtual Type GetType() const override { return GetStaticType(); }; \
+    virtual const char *GetName() const override { return #type; };
+
     //-----------------------------------------------------------------------------
-    // [SECTION] Windows : Event
+    // [SECTION] Event : Event
     //-----------------------------------------------------------------------------
 
     class Event
     {
     public:
-        Event() = default;
-        template <typename T>
-        Event(const T &data) : m_data(data) {}
-
-        struct MouseScrolled
+        enum class Type
         {
-            Mouse::Wheel wheel{};
-            Vec2i position;
-            float delta{};
+            Unknown = -1,
+
+            WindowClose,
+            WindowResize,
+
+            AppUpdate,
+            AppRender,
+
+            KeyTyped,
+            KeyPressed,
+            KeyReleased,
+
+            MouseMoved,
+            MousePressed,
+            MouseReleased,
+            MouseScrolled,
         };
 
-        struct MouseMoved
-        {
-            Vec2i position;
-        };
+    public:
+        virtual Type GetType() const = 0;
+        virtual const char *GetName() const = 0;
 
-        struct MousePressed
-        {
-            Mouse::Button button{};
-            Vec2i position;
-        };
+    public:
+        bool Handled = false;
+    };
 
-        struct MouseReleased
-        {
-            Mouse::Button button{};
-            Vec2i position;
-        };
+    struct WindowClose : public Event
+    {
+        WindowClose() {};
 
-        struct KeyPressed
-        {
-            Keyboard::Key code{};
-            bool alt{};
-            bool shift{};
-            bool system{};
-            bool control{};
-        };
+        EVENT(WindowClose)
+    };
 
-        struct KeyReleased
-        {
-            Keyboard::Key code{};
-            bool alt{};
-            bool shift{};
-            bool system{};
-            bool control{};
-        };
+    struct WindowResize : public Event
+    {
+        WindowResize(uint32_t width, uint32_t height)
+            : width(width), height(height) {};
 
-        template <typename EventType>
-        [[nodiscard]] bool is() const
-        {
-            return std::holds_alternative<EventType>(m_data);
-        }
+        EVENT(WindowResize)
 
-        template <typename EventType>
-        [[nodiscard]] const EventType &get() const
+        uint32_t width;
+        uint32_t height;
+    };
+
+    struct AppUpdate : public Event
+    {
+        AppUpdate() {};
+
+        EVENT(AppUpdate)
+    };
+
+    struct AppRender : public Event
+    {
+        AppRender() {};
+
+        EVENT(AppRender)
+    };
+
+    struct KeyTyped : public Event
+    {
+        KeyTyped(Keyboard::Key key)
+            : key(key), code(static_cast<int>(key)) {};
+
+        KeyTyped(int code)
+            : key(static_cast<Keyboard::Key>(code)), code(code) {};
+
+        EVENT(KeyTyped)
+
+        Keyboard::Key key{};
+        int code;
+    };
+
+    struct KeyPressed : public Event
+    {
+        KeyPressed(Keyboard::Key key)
+            : key(key), code(static_cast<int>(key)) {};
+
+        KeyPressed(int code)
+            : key(static_cast<Keyboard::Key>(code)), code(code) {};
+
+        EVENT(KeyPressed)
+
+        Keyboard::Key key{};
+        int code;
+    };
+
+    struct KeyReleased : public Event
+    {
+        KeyReleased(Keyboard::Key key)
+            : key(key), code(static_cast<int>(key)) {};
+
+        KeyReleased(int code)
+            : key(static_cast<Keyboard::Key>(code)), code(code) {};
+
+        EVENT(KeyReleased)
+
+        Keyboard::Key key{};
+        int code;
+    };
+
+    struct MouseMoved : public Event
+    {
+        MouseMoved(float x, float y)
+            : x(x), y(y) {};
+
+        EVENT(MouseMoved)
+
+        float x, y;
+    };
+
+    struct MousePressed : public Event
+    {
+        MousePressed(int button)
+            : button(static_cast<Mouse::Button>(button)), code(button) {};
+
+        MousePressed(Mouse::Button button)
+            : button(button), code(static_cast<int>(button)) {};
+
+        EVENT(MousePressed)
+
+        Mouse::Button button{};
+        int code;
+    };
+
+    struct MouseScrolled : public Event
+    {
+        MouseScrolled(float xOffset, float yOffset)
+            : XOffset(xOffset), YOffset(yOffset) {};
+
+        EVENT(MouseScrolled)
+
+        Mouse::Wheel wheel{};
+        float XOffset, YOffset;
+    };
+
+    struct MouseReleased : public Event
+    {
+        MouseReleased(int button)
+            : button(static_cast<Mouse::Button>(button)), code(button) {};
+
+        MouseReleased(Mouse::Button button)
+            : button(button), code(static_cast<int>(button)) {};
+
+        EVENT(MouseReleased)
+
+        Mouse::Button button{};
+        int code;
+    };
+
+    class EventDispatcher
+    {
+    public:
+        EventDispatcher(Event &event)
+            : m_Event(event) {}
+
+        template <typename T, typename F>
+        bool Dispatch(const F &func)
         {
-            return std::get<EventType>(m_data);
+            if (m_Event.GetType() == T::GetStaticType())
+            {
+                m_Event.Handled = func(static_cast<T &>(m_Event));
+                return true;
+            }
+            return false;
         }
 
     private:
-        std::variant<
-            KeyPressed,
-            KeyReleased,
-            MouseScrolled,
-            MouseMoved,
-            MousePressed,
-            MouseReleased>
-            m_data;
+        Event &m_Event;
     };
+
+#pragma endregion Event
+
+    //-----------------------------------------------------------------------------
+    // [SECTION] Platform : Window
+    //-----------------------------------------------------------------------------
+
+    struct WindowProps
+    {
+        std::string Title;
+        uint32_t Width;
+        uint32_t Height;
+
+        WindowProps(const std::string &title = "Clde OpenGL ",
+                    uint32_t width = 1280,
+                    uint32_t height = 720)
+            : Title(title), Width(width), Height(height)
+        {
+        }
+    };
+
+    class Window
+    {
+    public:
+        using EventCallbackFn = std::function<void(Event &)>;
+
+        virtual ~Window() = default;
+
+        virtual void OnUpdate() = 0;
+
+        virtual uint32_t GetWidth() const = 0;
+        virtual uint32_t GetHeight() const = 0;
+
+        // Window attributes
+        virtual void SetEventCallback(const EventCallbackFn &callback) = 0;
+        virtual void SetVSync(bool enabled) = 0;
+        virtual bool IsVSync() const = 0;
+
+        virtual void *GetNativeWindow() const = 0;
+
+        static Window *Create(const WindowProps &props = WindowProps());
+
+        inline static Window &Get() { return *s_Instance; }
+
+    private:
+        static Window *s_Instance;
+    };
+
+#pragma region Windows
+
+#define CLYDE_PLATFORM_WINDOWS
+#if defined(CLYDE_PLATFORM_WINDOWS)
 
     //-----------------------------------------------------------------------------
     // [SECTION] Windows : Window
     //-----------------------------------------------------------------------------
 
-    class Window
+    class WindowsWindow : public Window
     {
     public:
-        Window(int width, int height, const char *title);
-        ~Window();
+        WindowsWindow(const WindowProps &props);
+        virtual ~WindowsWindow();
 
-        void Open();
-        void Close();
-        bool IsOpen() const;
-        bool ShouldClose() const;
+        void OnUpdate() override;
 
-        void PollEvents();
-        bool PollEvent(Event &event);
+        inline uint32_t GetWidth() const override { return m_Data.Width; }
+        inline uint32_t GetHeight() const override { return m_Data.Height; }
 
-        void Clear(Color color = {0, 0, 0, 255});
-        void Display();
+        // Window attributes
+        inline void SetEventCallback(const EventCallbackFn &callback) override { m_Data.EventCallback = callback; }
 
-        void Draw(const Shape &shape);
-        void Draw(const Image &image, Vec2f position);
-        void Draw(const Text &text, Vec2f position);
-        void Draw(const Texture &texture, Vec2f position);
+        void SetVSync(bool enabled) override;
+        bool IsVSync() const override;
 
-        void PushEvent(const Event &event);
+        inline virtual void *GetNativeWindow() const { return m_Window; }
 
     private:
-        struct Impl;
-        std::unique_ptr<Impl> m_impl;
-        std::queue<Event> m_events;
+        virtual void Init(const WindowProps &props);
+        virtual void Free();
+
+    private:
+        struct GLFWwindow *m_Window;
+
+        struct WindowData
+        {
+            std::string Title;
+            uint32_t Width, Height;
+            bool VSync;
+
+            EventCallbackFn EventCallback;
+        };
+
+        WindowData m_Data;
     };
 
+    //-----------------------------------------------------------------------------
+    // [SECTION] Windows : Input
+    //-----------------------------------------------------------------------------
+
+    /**
+     * @defgroup input Window Inputs.
+     * @brief Window Input Classes.
+     * @{
+     */
+
+    class WindowsMouse : public Mouse
+    {
+    protected:
+        virtual bool IsButtonPressedImpl(Button button) override;
+        virtual std::pair<float, float> GetPositionImpl() override;
+    };
+
+    class WindowsKeyboard : public Keyboard
+    {
+    protected:
+        virtual bool IsKeyPressedImpl(Key key) override;
+    };
+
+    /** @} group input */
+
+#endif // CLYDE_PLATFORM_WINDOWS
+
 #pragma endregion Windows
+
+#pragma region Linux
+
+#if defined(CLYDE_PLATFORM_LINUX)
+
+    //-----------------------------------------------------------------------------
+    // [SECTION] Linux : Window
+    //-----------------------------------------------------------------------------
+
+    //-----------------------------------------------------------------------------
+    // [SECTION] Linux : Input
+    //-----------------------------------------------------------------------------
+
+    /**
+     * @defgroup input Linux Inputs.
+     * @brief Linux Input Classes.
+     * @{
+     */
+
+    /** @} group input */
+
+#endif // CLYDE_PLATFORM_LINUX
+
+#pragma endregion Linux
+
+#pragma endregion Platform
+
+#pragma region Application
+
+    //-----------------------------------------------------------------------------
+    // [SECTION] Application : Layer
+    //-----------------------------------------------------------------------------
+
+    class Layer
+    {
+    public:
+        Layer(const std::string &name = "Layer");
+        virtual ~Layer() = default;
+
+        virtual void OnAttach() {}
+        virtual void OnDetach() {}
+
+        virtual void OnUpdate(float ts) {}
+        virtual void OnEvent(Event &event) {}
+
+        inline const std::string &GetName() const { return m_DebugName; }
+
+    protected:
+        std::string m_DebugName;
+    };
+
+    //-----------------------------------------------------------------------------
+    // [SECTION] Application : Application
+    //-----------------------------------------------------------------------------
+
+    class Application
+    {
+    public:
+        Application(const std::string &name = "Clde", uint32_t width = 1280, uint32_t height = 720);
+        virtual ~Application();
+
+        void Run();
+
+        void OnEvent(Event &e);
+
+        template <typename T>
+        void PushLayer();
+
+        void PushLayer(const std::shared_ptr<Layer> &layer);
+
+        template <typename T>
+        void PushOverlay();
+
+        void PushOverlay(const std::shared_ptr<Layer> &Overlay);
+
+        template <typename T>
+        void PopLayer();
+
+        void PopLayer(const std::shared_ptr<Layer> &layer);
+
+        template <typename T>
+        void PopOverlay();
+
+        void PopOverlay(const std::shared_ptr<Layer> &Overlay);
+
+        static Application &Get();
+
+    private:
+        bool OnWindowClose(Event &e);
+
+        void Init();
+        void Free();
+
+    private:
+        bool m_Running = true;
+        float m_TimeStep = 0.0f;
+        float m_FrameTime = 0.0f;
+        float m_LastFrameTime = 0.0f;
+        std::unique_ptr<Window> m_Window;
+
+        uint32_t m_LayerInsertIndex = 0;
+        std::vector<std::shared_ptr<Layer>> m_Layers;
+
+    private:
+        static Application *s_Instance;
+    };
+
+#pragma endregion Application
 
 } // namespace clyde
 
