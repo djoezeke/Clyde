@@ -103,6 +103,7 @@ namespace clyde
     //-----------------------------------------------------------------------------
 
     constexpr float clyde::Angle::asDegrees() const { return radians * 180.0f / 3.14159265359f; };
+
     constexpr float clyde::Angle::asRadians() const { return radians; };
 
     constexpr Angle degrees(float angle)
@@ -111,6 +112,7 @@ namespace clyde
         a.radians = angle * 3.14159265359f / 180.0f;
         return a;
     };
+
     constexpr Angle radians(float angle)
     {
         Angle a;
@@ -164,7 +166,7 @@ namespace clyde
         }
         else
         {
-            // LOG_ERROR("Could not open file '{0}'", filepath);
+            LOG_ERROR("Could not open file '%s'", filepath);
         }
 
         return result;
@@ -270,7 +272,7 @@ namespace clyde
     static bool s_GLFWInitialized = false;
 
     static void GLFWErrorCallback(int error, const char *description) {
-        // LOG_ERROR("GLFW Error ({0}): {1}", error, description);
+        // LOG_ERROR("GLFW Error (%s): {1}", error, description);
     };
 
     Window *Window::Create(const WindowProps &props)
@@ -308,10 +310,10 @@ namespace clyde
         glfwMakeContextCurrent(m_Window);
         int status = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
-        // LOG_INFO("OpenGL Info:");
-        // LOG_INFO("  Vendor: {0}", glGetString(GL_VENDOR));
-        // LOG_INFO("  Renderer: {0}", glGetString(GL_RENDERER));
-        // LOG_INFO("  Version: {0}", glGetString(GL_VERSION));
+        LOG_INFO("OpenGL Info:\n");
+        LOG_INFO("  Vendor: %s\n", glGetString(GL_VENDOR));
+        LOG_INFO("  Renderer: %s\n", glGetString(GL_RENDERER));
+        LOG_INFO("  Version: %s\n", glGetString(GL_VERSION));
 
         glfwSetWindowUserPointer(m_Window, &m_Data);
         SetVSync(true);
@@ -601,6 +603,51 @@ namespace clyde
     };
 
 #pragma endregion Application
+
+#pragma region Utilities
+
+    static GLDebugLevel s_GLDebugLevel = GLDebugLevel::HighAssert;
+
+    void SetGLDebugLevel(GLDebugLevel level)
+    {
+        s_GLDebugLevel = level;
+    };
+
+    void GLLogMessage(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam)
+    {
+        switch (severity)
+        {
+        case GL_DEBUG_SEVERITY_HIGH:
+            if ((int)s_GLDebugLevel > 0)
+            {
+                LOG_ERROR("[OpenGL Debug HIGH] %s", message);
+                if (s_GLDebugLevel == GLDebugLevel::HighAssert)
+                    CLYDE_ASSERT(false, "GL_DEBUG_SEVERITY_HIGH");
+            }
+            break;
+        case GL_DEBUG_SEVERITY_MEDIUM:
+            if ((int)s_GLDebugLevel > 2)
+                LOG_WARN("[OpenGL Debug MEDIUM] %s", message);
+            break;
+        case GL_DEBUG_SEVERITY_LOW:
+            if ((int)s_GLDebugLevel > 3)
+                LOG_INFO("[OpenGL Debug LOW] %s", message);
+            break;
+        case GL_DEBUG_SEVERITY_NOTIFICATION:
+            if ((int)s_GLDebugLevel > 4)
+                LOG_TRACE("[OpenGL Debug NOTIFICATION] %s", message);
+            break;
+        }
+    };
+
+    void EnableGLDebugging()
+    {
+        glEnable(GL_DEBUG_OUTPUT);
+        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+        // glDebugMessageCallback(GLLogMessage, nullptr);
+    };
+
+#pragma endregion Utilities
 
 } // namespace clyde
 

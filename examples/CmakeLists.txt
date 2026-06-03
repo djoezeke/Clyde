@@ -12,16 +12,3 @@ target_include_directories(demo2 PUBLIC "../include" )
 set_target_properties(demo PROPERTIES
     VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
 )
-
-# Copy asset files to the root build directory where the executable is built
-add_custom_command(TARGET demo POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${CMAKE_CURRENT_SOURCE_DIR}/face.png"
-        "${CMAKE_BINARY_DIR}/face.png"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${CMAKE_CURRENT_SOURCE_DIR}/parrot.png"
-        "${CMAKE_BINARY_DIR}/parrot.png"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${CMAKE_CURRENT_SOURCE_DIR}/tuffy.ttf"
-        "${CMAKE_BINARY_DIR}/tuffy.ttf"
-)
