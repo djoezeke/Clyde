@@ -25,7 +25,24 @@ public:
         std::cout << "OnDetach\n";
     };
 
-    virtual void OnEvent(clyde::Event &event) override {};
+    virtual void OnEvent(clyde::Event &event) override
+    {
+        clyde::EventDispatcher dispatcher(event);
+
+        dispatcher.Dispatch<clyde::MousePressed>(
+            [&](clyde::MousePressed &e)
+            {
+                std::cout << e.code << "\n";
+                return false;
+            });
+
+        dispatcher.Dispatch<clyde::MouseReleased>(
+            [&](clyde::MouseReleased &e)
+            {
+                std::cout << e.code << "\n";
+                return false;
+            });
+    };
 
     virtual void OnUpdate(float ts) override
     {
@@ -42,6 +59,9 @@ public:
     {
         auto layer = std::make_shared<DemoLayer>();
         PushLayer(layer);
+    };
+
+    ~DemoApplication() {
     };
 };
 

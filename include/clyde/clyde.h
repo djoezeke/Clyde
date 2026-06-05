@@ -108,17 +108,17 @@ struct GLFWwindow;
 #define CLYDE_IMAGE_TGA
 #define CLYDE_IMAGE_JPG
 
-// OpenGL Version 1.1
-#define CLYDE_OPENGL_11 1
+// // OpenGL Version 1.1
+// #define CLYDE_OPENGL_11 1
 
-// OpenGL Version 2.1
-#define CLYDE_OPENGL_21 2
+// // OpenGL Version 2.1
+// #define CLYDE_OPENGL_21 2
 
-// OpenGL Version 3.3
-#define CLYDE_OPENGL_33 3
+// // OpenGL Version 3.3
+// #define CLYDE_OPENGL_33 3
 
-// OpenGL Version 4.3
-#define CLYDE_OPENGL_43 4
+// // OpenGL Version 4.3
+// #define CLYDE_OPENGL_43 4
 
 /** @} */
 
@@ -722,6 +722,26 @@ namespace clyde
             : r(_r), g(_g), b(_b), a(_a) {}
     };
 
+    class Texture
+    {
+    private:
+        unsigned int id = 0;
+        int width = 0;
+        int height = 0;
+        int channels = 0;
+
+    public:
+        Texture(const std::string &filePath);
+        ~Texture();
+
+        void bind(unsigned int slot = 0) const;
+        void unbind() const;
+
+        unsigned int getId() const { return id; }
+        int getWidth() const { return width; }
+        int getHeight() const { return height; }
+    };
+
 #pragma endregion Graphics
 
 #pragma region Renderer
@@ -741,6 +761,14 @@ namespace clyde
 #endif // CLYDE_RENDERER_OPENGL33
 
 #pragma endregion OpenGL33
+
+#pragma region OpenGL43
+
+#if defined(CLYDE_RENDERER_OPENGL43)
+
+#endif // CLYDE_RENDERER_OPENGL43
+
+#pragma endregion OpenGL43
 
 #pragma endregion Renderer
 
@@ -1136,9 +1164,7 @@ namespace clyde
         WindowProps(const std::string &title = "Clde OpenGL ",
                     uint32_t width = 1280,
                     uint32_t height = 720)
-            : Title(title), Width(width), Height(height)
-        {
-        }
+            : Title(title), Width(width), Height(height) {};
     };
 
     class Window
@@ -1161,6 +1187,8 @@ namespace clyde
         virtual void *GetNativeWindow() const = 0;
 
         static Window *Create(const WindowProps &props = WindowProps());
+
+        static Window *Create(const std::string &title, uint32_t width, uint32_t height);
 
         inline static Window &Get() { return *s_Instance; }
 
@@ -1284,16 +1312,16 @@ namespace clyde
 
         virtual ~Layer() = default;
 
-        virtual void OnAttach() {}
-        virtual void OnDetach() {}
+        virtual void OnAttach();
+        virtual void OnDetach();
 
-        virtual void OnUpdate(float ts) {}
-        virtual void OnEvent(Event &event) {}
+        virtual void OnUpdate(float ts);
+        virtual void OnEvent(Event &event);
 
-        inline const std::string &GetName() const { return m_DebugName; }
+        inline const std::string &GetName() const;
 
     protected:
-        std::string m_DebugName;
+        std::string m_Name;
     };
 
     //-----------------------------------------------------------------------------
@@ -1303,7 +1331,8 @@ namespace clyde
     class Application
     {
     public:
-        Application(const std::string &name = "Clde", uint32_t width = 1280, uint32_t height = 720);
+        Application(const std::string &name = "Clyde Application", uint32_t width = 720, uint32_t height = 500);
+
         virtual ~Application();
 
         void Run();
@@ -1335,7 +1364,7 @@ namespace clyde
     private:
         bool OnWindowClose(Event &e);
 
-        void Init();
+        void Init(const std::string &name, uint32_t width, uint32_t height);
         void Free();
 
     private:

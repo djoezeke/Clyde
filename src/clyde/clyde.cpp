@@ -42,6 +42,91 @@
 
 #include "clyde/clyde.h"
 
+// clang-format off
+
+#if defined(_MSC_VER)
+    #define GL_DEBUG_BREAK() __debugbreak()
+#elif defined(__GNUC__) || defined(__clang__)
+    #define GL_DEBUG_BREAK() __builtin_trap()
+#else
+    #define GL_DEBUG_BREAK() abort()
+#endif
+
+#ifdef CLYDE_DEBUG
+    #define GL_CALL(x) x
+#else
+    #define GL_CALL(x)                                                         \
+        x;                                                                     \
+        if (const char *errStr = glCheckError(#x, __FILE__, __LINE__)) \
+        {                                                                      \
+            std::cerr << errStr << std::endl;                                  \
+            GL_DEBUG_BREAK();                                                  \
+        }
+#endif // CLYDE_DEBUG
+
+// clang-format on
+
+// Helper function to decode the string
+inline const char *glCheckError(const char *function, const char *file, int line)
+{
+    // Get the last error
+    GLenum errCode = glGetError();
+    if (errCode == GL_NO_ERROR)
+        return nullptr;
+
+    std::string files = file;
+    std::string funcs = function;
+    std::string error = "Unknown error";
+    std::string description = "No description";
+
+    switch (errCode)
+    {
+    case GL_INVALID_ENUM:
+        error = "GL_INVALID_ENUM";
+        description = "An unacceptable value has been specified for an enumerated argument.";
+        break;
+    case GL_INVALID_VALUE:
+        error = "GL_INVALID_VALUE";
+        description = "A numeric argument is out of range.";
+        break;
+    case GL_INVALID_OPERATION:
+        error = "GL_INVALID_OPERATION";
+        description = "The specified operation is not allowed in the current state.";
+        break;
+    case GL_OUT_OF_MEMORY:
+        error = "GL_OUT_OF_MEMORY";
+        description = "There is not enough memory left to execute the command.";
+        break;
+#ifdef GL_STACK_OVERFLOW
+    case GL_STACK_OVERFLOW:
+        error = "GL_STACK_OVERFLOW";
+        description = "This command would cause a stack overflow.";
+        break; // Legacy
+#endif
+#ifdef GL_STACK_UNDERFLOW
+    case GL_STACK_UNDERFLOW:
+        error = "GL_STACK_UNDERFLOW";
+        description = "This command would cause a stack underflow.";
+        break; // Legacy
+#endif
+#ifdef GL_INVALID_FRAMEBUFFER_OPERATION
+    case GL_INVALID_FRAMEBUFFER_OPERATION:
+        error = "GL_INVALID_FRAMEBUFFER_OPERATION";
+        description = "The object bound to FRAMEBUFFER_BINDING is not \"framebuffer complete\".";
+        break; // 3.0+
+#endif
+    }
+
+    std::ostringstream s;
+    s << "[OpenGL Error] ( " << error << " ) "
+      << files.substr(files.find_last_of("\\/") + 1) << "(" << line << ")."
+      << "\nFunction: " << funcs
+      << "\nDescription: " << description << "\n"
+      << std::endl;
+
+    return s.str().c_str();
+};
+
 #if !defined(CLYDE_OPENGL_11) && \
     !defined(CLYDE_OPENGL_21) && \
     !defined(CLYDE_OPENGL_33) && \
@@ -208,6 +293,14 @@ namespace clyde
 
 #pragma endregion OpenGL33
 
+#pragma region OpenGL43
+
+#if defined(CLYDE_RENDERER_OPENGL43)
+
+#endif // CLYDE_RENDERER_OPENGL43
+
+#pragma endregion OpenGL43
+
 #pragma endregion Renderer
 
 #pragma region Platform
@@ -278,6 +371,13 @@ namespace clyde
     Window *Window::Create(const WindowProps &props)
     {
         WindowsWindow *w = new WindowsWindow(props);
+        s_Instance = w;
+        return w;
+    };
+
+    Window *Window::Create(const std::string &title, uint32_t width, uint32_t height)
+    {
+        WindowsWindow *w = new WindowsWindow({title, width, height});
         s_Instance = w;
         return w;
     };
@@ -398,7 +498,11 @@ namespace clyde
 
     void WindowsWindow::Free()
     {
-        glfwDestroyWindow(m_Window);
+        if (m_Window)
+        {
+            glfwDestroyWindow(m_Window);
+        }
+        glfwTerminate();
     };
 
     void WindowsWindow::OnUpdate()
@@ -452,9 +556,17 @@ namespace clyde
     // [SECTION] Application : Layer
     //-----------------------------------------------------------------------------
 
-    Layer::Layer(const std::string &debugName)
-        : m_DebugName(debugName) {
+    Layer::Layer(const std::string &name)
+        : m_Name(name) {
           };
+
+    void Layer::OnAttach() {};
+    void Layer::OnDetach() {};
+
+    void Layer::OnUpdate(float ts) {};
+    void Layer::OnEvent(Event &event) {};
+
+    inline const std::string &Layer::GetName() const { return m_Name; };
 
     //-----------------------------------------------------------------------------
     // [SECTION] Application : Application
@@ -466,7 +578,7 @@ namespace clyde
     {
         s_Instance = this;
 
-        Init();
+        Init(name, width, height);
     };
 
     Application::~Application()
@@ -593,9 +705,9 @@ namespace clyde
         return true;
     };
 
-    void Application::Init()
+    void Application::Init(const std::string &name, uint32_t width, uint32_t height)
     {
-        m_Window = std::unique_ptr<Window>(Window::Create({"name", 800, 450}));
+        m_Window = std::unique_ptr<Window>(Window::Create({name, width, height}));
         m_Window->SetEventCallback(BIND_EVENT_FN(OnEvent));
     };
 
@@ -612,6 +724,8 @@ namespace clyde
     {
         s_GLDebugLevel = level;
     };
+
+#if defined(CLYDE_RENDERER_OPENGL43)
 
     void GLLogMessage(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam)
     {
@@ -640,14 +754,60 @@ namespace clyde
         }
     };
 
+#endif // CLYDE_RENDERER_OPENGL43
+
     void EnableGLDebugging()
     {
         glEnable(GL_DEBUG_OUTPUT);
         glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-        // glDebugMessageCallback(GLLogMessage, nullptr);
+
+#if defined(CLYDE_RENDERER_OPENGL43)
+        glDebugMessageCallback(GLLogMessage, nullptr);
+#endif // CLYDE_RENDERER_OPENGL43
     };
 
 #pragma endregion Utilities
+
+    void ensureExtensionsInit()
+    {
+        static bool initialized = false;
+        if (!initialized)
+        {
+            initialized = true;
+            gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+
+            // Retrieve the context version number
+            int majorVersion = 0;
+            int minorVersion = 0;
+
+            // Try the new way first
+            glGetIntegerv(GL_MAJOR_VERSION, &majorVersion);
+            glGetIntegerv(GL_MINOR_VERSION, &minorVersion);
+
+            if (glGetError() == GL_INVALID_ENUM)
+            {
+                // Try the old way
+                const GLubyte *version = glGetString(GL_VERSION);
+                if (version)
+                {
+                    // The beginning of the returned string is "major.minor" (this is standard)
+                    majorVersion = version[0] - '0';
+                    minorVersion = version[2] - '0';
+                }
+                else
+                {
+                    // Can't get the version number, assume 1.0
+                    majorVersion = 1;
+                    minorVersion = 0;
+                }
+            }
+
+            if ((majorVersion < 1))
+            {
+                CLYDE_ASSERT(false, "OpenGL 1.0");
+            }
+        }
+    }
 
 } // namespace clyde
 
